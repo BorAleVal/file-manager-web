@@ -1,0 +1,108 @@
+<!doctype html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <title>Simple File Manager</title>
+</head>
+<style>
+    * {
+        margin: 1px;
+    }
+
+    select,
+    button {
+        cursor: pointer;
+        background-color: darkgray;
+    }
+
+    body {
+        background-color: darkblue;
+        font-family: monospace;
+        color: white;
+    }
+
+    .folder-tools {
+        align-items: center;
+        justify-content: left;
+        display: flex;
+    }
+
+    .folder-tools p {
+        margin: 0 0 0 5px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+/*.scrollable-block{
+    display: block;
+  max-height: 87vh; 
+  overflow-y: auto; 
+}*/
+    .content-list {
+        margin: 0px;
+        border: 1px solid;
+        border-radius: 1px;
+        width: 100%;
+        border-collapse: collapse;
+        color: aqua;
+    }
+
+    .content-list th {
+        color: yellow;
+        border-color: aqua;
+    }
+
+    .content-list td,
+    th {
+        padding: 2px;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        border: 1px solid;
+    }
+
+    .bottom-buttons {
+        position: fixed;
+        bottom: 0;
+    }
+</style>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+<body>
+    <header>
+        <h1>File Manager</h1>
+    </header>
+    <div class="file-manager">
+        <div class="folder-tools">
+            <select id="selectHD" onclick="changeHD()"></select>
+            <button id="goToOwnerBtn" onclick="onButtonUpLevelClick()"><i  class="fa-solid fa-level-up"></i></button>
+            <p id="currentPath" class="folder-path"></p>
+        </div>
+        <div>
+            <table class="content-list" id="folder-content">
+                <thead>
+                    <tr>
+                        <th>Имя</th>
+                        <th>Размер</th>
+                        <th>Дата изм.</th>
+                    </tr>
+                </thead>
+                <tbody id="folder-content-list">
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <footer class="bottom-buttons">
+        <div>
+            <button><i  class="fa-solid fa-level-down"></i>Move</button>
+            <button><i  class="fa-solid fa-copy"></i>Copy</button>
+            <button><i  class="fa-solid fa-paste"></i>Paste</button>
+            <button><i  class="fa-solid fa-scissors"></i>Delete</button>
+        </div>
+    </footer>
+    <script src="js/main.js"></script>
+</body>
+
+</html>
