@@ -34,12 +34,15 @@
         overflow: hidden;
         text-overflow: ellipsis;
     }
-/*.scrollable-block{
-    display: block;
-  max-height: 87vh; 
-  overflow-y: auto; 
-}*/
-    .content-list {
+
+    .table-container {
+        overflow-y: auto;
+        max-height: calc(100vh - 85px); /*через js лучше вычислить сумму других контролов, но так быстрее*/
+        border: 1px solid;
+        border-color: aqua;
+    }
+
+    .content {
         margin: 0px;
         border: 1px solid;
         border-radius: 1px;
@@ -48,12 +51,15 @@
         color: aqua;
     }
 
-    .content-list th {
+    .content th {
+        background-color: darkblue;
         color: yellow;
         border-color: aqua;
+        position: sticky;
+        top: 0;
     }
 
-    .content-list td,
+    .content td,
     th {
         padding: 2px;
         overflow: hidden;
@@ -65,9 +71,14 @@
     .bottom-buttons {
         position: fixed;
         bottom: 0;
-    }
+        border: 1px solid;
+        width: 100%;
+    } 
+    .fa {
+        margin-right: 2px;
+    }  
 </style>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css"
     crossorigin="anonymous" referrerpolicy="no-referrer" />
 
 <body>
@@ -77,32 +88,33 @@
     <div class="file-manager">
         <div class="folder-tools">
             <select id="selectHD" onclick="changeHD()"></select>
-            <button id="goToOwnerBtn" onclick="onButtonUpLevelClick()"><i  class="fa-solid fa-level-up"></i></button>
+            <button id="goToOwnerBtn" onclick="onButtonUpLevelClick()"><i class="fa-solid fa-level-up"></i></button>
             <p id="currentPath" class="folder-path"></p>
         </div>
-        <div>
-            <table class="content-list" id="folder-content">
+        <div class="table-container">
+            <table class="content" id="folder-content">
                 <thead>
                     <tr>
                         <th>Имя</th>
                         <th>Размер</th>
-                        <th>Дата изм.</th>
+                        <th>Дата изм.</th> 
                     </tr>
                 </thead>
-                <tbody id="folder-content-list">
+                <tbody class="content-list" id="folder-content-list">
                 </tbody>
             </table>
         </div>
     </div>
-    <footer class="bottom-buttons">
-        <div>
-            <button><i  class="fa-solid fa-level-down"></i>Move</button>
-            <button><i  class="fa-solid fa-copy"></i>Copy</button>
-            <button><i  class="fa-solid fa-paste"></i>Paste</button>
-            <button><i  class="fa-solid fa-scissors"></i>Delete</button>
+    <div class="bottom-buttons-container">
+        <div class="bottom-buttons">
+            <div>
+                <button><i class="fa-solid fa-level-down"></i>Move</button>
+                <button><i class="fa-solid fa-copy"></i>Copy</button>
+                <button><i class="fa-solid fa-paste"></i>Paste</button>
+                <button><i class="fa-solid fa-scissors"></i>Delete</button>
+            </div>
         </div>
-    </footer>
-    <script src="js/main.js"></script>
+    </div>
 </body>
-
+<script src="js/main.js"></script>
 </html>

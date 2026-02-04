@@ -1,5 +1,11 @@
 const rootPath = "C:\\";
 var currentPath = rootPath;
+const iconMap = new Map([
+  ["folder", "folder"],
+  [".xlsx", "file-excel"],
+  [".pdf", "file-pdf"],
+]);
+
 const jsonData = [
   { ID: "001", HD_Name: "C:\\" },
   { ID: "002", HD_Name: "D:\\" },
@@ -7,19 +13,16 @@ const jsonData = [
 
 const selectElement = document.getElementById("selectHD");
 const currentPathElement = document.getElementById("currentPath");
-currentPath.textContent = currentPath;
+currentPathElement.innerText = currentPath;
 fillFileManager(rootPath);
 
 jsonData.forEach((data) => {
   const option = document.createElement("option");
   option.value = data.ID;
-  option.textContent = data.HD_Name;
+  option.innerText = data.HD_Name;
   selectElement.appendChild(option);
 });
 
-const json =
-  '[{"name":"John sa ads asdfasdsd sad s dds fdsafds", "size":30, "modifiedOn":"25.04.17"}, {"name":"Jane", "size":27, "modifiedOn":"24.04.17"}]';
-const data = JSON.parse(json);
 const table = document.getElementById("folder-content");
 const content = document.getElementById("folder-content-list");
 
@@ -30,17 +33,24 @@ function fillTable(data) {
 
   // Заполнение таблицы данными
   data.forEach((item) => {
-    const row = table.insertRow();
+    const row = content.insertRow();
 
     Object.entries(item).forEach(([key, value]) => {
+      if (key == "type") return;
+
       const cell = row.insertCell();
-      cell.textContent = value;
+      cell.innerText = value;
       if (key == "name") {
         cell.addEventListener("click", function () {
           onContentItemClick(cell);
         });
         cell.style.cursor = "pointer";
-        cell.innerHTML = '<i class="fa-solid fa-file"></i>' + cell.innerHTML;
+        let iconName = "file";
+        if (iconMap.has(item.type)) {
+          iconName = iconMap.get(item.type);
+        }
+
+        cell.innerHTML = `<i class="fa fa-${iconName}"></i>` + cell.innerHTML;
       } else {
         cell.style.textAlign = "right";
         cell.style.width = "60px";
@@ -49,18 +59,17 @@ function fillTable(data) {
   });
 }
 
-document.body.appendChild(table);
-
 function onContentItemClick(btn) {
   console.log("fillFileManagerBtn");
-  let path = btn.textContent;
+  let path = btn.innerText;
   if (path == undefined) return;
-  currentPath = path;
+  currentPath += currentPath.endsWith("\\") ? path : "\\" + path;
+  currentPathElement.innerText = currentPath;
   fillFileManager(path);
 }
 
-function fillFileManager(path) {
-  fetch(`/api/SystemInfo/pathcontent?path=${encodeURIComponent(path)}`)
+function fillFileManager() {
+  fetch(`/api/SystemInfo/pathcontent?path=${encodeURIComponent(currentPath)}`)
     .then((response) => response.json())
     .then((data) => {
       fillTable(data);
@@ -68,7 +77,6 @@ function fillFileManager(path) {
     .catch((error) => {
       console.log(error);
     });
-  console.log("goTo function invoked");
 }
 
 function onButtonUpLevelClick() {
@@ -76,6 +84,7 @@ function onButtonUpLevelClick() {
     .then((response) => response.text())
     .then((text) => {
       currentPath = text;
+      currentPathElement.innerText = currentPath;
       fillFileManager(currentPath);
     })
     .catch((error) => {
