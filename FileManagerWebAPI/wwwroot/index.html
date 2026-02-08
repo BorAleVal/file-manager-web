@@ -37,7 +37,7 @@
 
     .table-container {
         overflow-y: auto;
-        max-height: calc(100vh - 85px); /*через js лучше вычислить сумму других контролов, но так быстрее*/
+        max-height: calc(100vh - 85px); /*возможно через js лучше вычислить сумму других контролов, но так проще*/
         border: 1px solid;
         border-color: aqua;
     }
@@ -76,7 +76,10 @@
     } 
     .fa {
         margin-right: 2px;
-    }  
+    }
+    .selected-row {
+        color: darkgray;
+    }
 </style>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css"
     crossorigin="anonymous" referrerpolicy="no-referrer" />
@@ -87,9 +90,9 @@
     </header>
     <div class="file-manager">
         <div class="folder-tools">
-            <select id="selectHD" onclick="changeHD()"></select>
-            <button id="goToOwnerBtn" onclick="onButtonUpLevelClick()"><i class="fa-solid fa-level-up"></i></button>
-            <p id="currentPath" class="folder-path"></p>
+            <select id="select-drive"></select>
+            <button onclick="onButtonUpLevelClick()"><i class="fa-solid fa-level-up"></i></button>
+            <p id="current-path" class="folder-path"></p>
         </div>
         <div class="table-container">
             <table class="content" id="folder-content">
@@ -108,10 +111,9 @@
     <div class="bottom-buttons-container">
         <div class="bottom-buttons">
             <div>
-                <button><i class="fa-solid fa-level-down"></i>Move</button>
-                <button><i class="fa-solid fa-copy"></i>Copy</button>
-                <button><i class="fa-solid fa-paste"></i>Paste</button>
-                <button><i class="fa-solid fa-scissors"></i>Delete</button>
+                <button onclick="copy()"><i class="fa-solid fa-copy"></i>Copy</button>
+                <button onclick="move()"><i class="fa-solid fa-level-down"></i>Move</button>
+                <button onclick="deleteFile()"><i class="fa-solid fa-scissors"></i>Delete</button>
             </div>
         </div>
     </div>

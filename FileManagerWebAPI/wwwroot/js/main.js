@@ -1,93 +1,172 @@
 const rootPath = "C:\\";
 var currentPath = rootPath;
+//todo: нужно придумать решение получше, что бы для одной икноки можно было назначить несоклько расширений
 const iconMap = new Map([
   ["folder", "folder"],
   [".xlsx", "file-excel"],
+  [".xls", "file-excel"],
   [".pdf", "file-pdf"],
 ]);
 
-const jsonData = [
-  { ID: "001", HD_Name: "C:\\" },
-  { ID: "002", HD_Name: "D:\\" },
-];
-
-const selectElement = document.getElementById("selectHD");
-const currentPathElement = document.getElementById("currentPath");
-currentPathElement.innerText = currentPath;
+const selectElement = document.getElementById("select-drive");
+const currentPathElement = document.getElementById("current-path");
+currentPathElement.textContent = currentPath;
+getDrives();
 fillFileManager(rootPath);
 
-jsonData.forEach((data) => {
-  const option = document.createElement("option");
-  option.value = data.ID;
-  option.innerText = data.HD_Name;
-  selectElement.appendChild(option);
-});
-
 const table = document.getElementById("folder-content");
-const content = document.getElementById("folder-content-list");
+var tableContent = document.getElementById("folder-content-list");
+
+function removeAllListeners(element) {
+  element.replaceWith(element.cloneNode(false));
+}
 
 function fillTable(data) {
-  while (content.childNodes.length) {
-    content.removeChild(content.childNodes[0]);
+  while (tableContent.childNodes.length) {
+    //на сколько понял нужно убрать всех подписчиков, во избежание утечки памяти
+    removeAllListeners(tableContent.childNodes[0]);
+    tableContent.removeChild(tableContent.childNodes[0]);
   }
 
+  const tc = document.createElement("tbody");
   // Заполнение таблицы данными
   data.forEach((item) => {
-    const row = content.insertRow();
+    const row = tc.insertRow();
+    //для выделения строки
+    row.addEventListener("click", function () {
+      onContentRowClick(row);
+    });
 
     Object.entries(item).forEach(([key, value]) => {
       if (key == "type") return;
 
       const cell = row.insertCell();
-      cell.innerText = value;
+      cell.textContent = value;
       if (key == "name") {
-        cell.addEventListener("click", function () {
-          onContentItemClick(cell);
+        cell.addEventListener("dblclick", function () {
+          onContentItemDblClick(cell);
         });
+        row.setAttribute("name", item.name);
         cell.style.cursor = "pointer";
-        let iconName = "file";
-        if (iconMap.has(item.type)) {
-          iconName = iconMap.get(item.type);
-        }
-
-        cell.innerHTML = `<i class="fa fa-${iconName}"></i>` + cell.innerHTML;
+        let iconName = iconMap.has(item.type) ? iconMap.get(item.type) : "file";
+        //добавляется соответствующая иконка к названию файла
+        //https://habr.com/ru/companies/timeweb/articles/843080/
+        cell.insertAdjacentHTML("afterbegin", `<i class="fa fa-${iconName}"></i>`);
+        cell.setAttribute("fileType", item.type);
       } else {
         cell.style.textAlign = "right";
         cell.style.width = "60px";
       }
     });
   });
+  //для предотвращения построчной отрисовки
+  cloneAttributes(tc, tableContent);
+  tableContent.replaceWith(tc);
+  tableContent = tc;
 }
 
-function onContentItemClick(btn) {
+function cloneAttributes(element, sourceNode) {
+  let attr;
+  let attributes = Array.prototype.slice.call(sourceNode.attributes);
+  while(attr = attributes.pop()) {
+    element.setAttribute(attr.nodeName, attr.nodeValue);
+  }
+}
+
+function onContentRowClick(row) {
+  if (row.classList.contains("selected-row")) {
+    row.classList.remove("selected-row");
+  } else {
+    row.classList.add("selected-row");
+  }
+
+  getSelectedRows().forEach((row) => {
+    console.log(row.getAttribute("name"));
+  });
+}
+
+function getSelectedRows() {
+  return document.querySelectorAll(".selected-row");
+}
+
+function onContentItemDblClick(cell) {
   console.log("fillFileManagerBtn");
-  let path = btn.innerText;
+  let type = cell.getAttribute("fileType");
+  let path = cell.textContent;
   if (path == undefined) return;
-  currentPath += currentPath.endsWith("\\") ? path : "\\" + path;
-  currentPathElement.innerText = currentPath;
-  fillFileManager(path);
+  let fullPath = currentPath.endsWith("\\")
+    ? currentPath + path
+    : currentPath + "\\" + path;
+  if (type == "folder") {
+    fillFileManager(fullPath).catch(alert);
+  } else {
+    runFile(fullPath);
+  }
 }
 
-function fillFileManager() {
-  fetch(`/api/SystemInfo/pathcontent?path=${encodeURIComponent(currentPath)}`)
+async function fillFileManager(path) {
+  let response = await fetch(
+    `/api/SystemInfo/directorycontent?path=${encodeURIComponent(path)}`,
+  );
+
+  if (response.status == 200) {
+    let data = await response.json();
+    fillTable(data);
+    currentPath = path;
+    currentPathElement.textContent = currentPath;
+    return;
+  }
+  let data = await response.json();
+  throw new Error(data.message);
+}
+
+function runFile(path) {
+  fetch(`/api/SystemInfo/runfile?filepath=${encodeURIComponent(path)}`).catch(
+    (error) => {
+      console.log(error.message);
+    },
+  );
+}
+
+function getDrives() {
+  fetch("/api/SystemInfo/harddrives")
     .then((response) => response.json())
     .then((data) => {
-      fillTable(data);
+      fillDrivesSelect(data);
+      return true;
     })
     .catch((error) => {
-      console.log(error);
+      console.log(error.message);
     });
 }
 
 function onButtonUpLevelClick() {
-  fetch(`/api/SystemInfo/ownerPath?path=${encodeURIComponent(currentPath)}`)
+  fetch(`/api/SystemInfo/ownerpath?path=${encodeURIComponent(currentPath)}`)
     .then((response) => response.text())
-    .then((text) => {
-      currentPath = text;
-      currentPathElement.innerText = currentPath;
-      fillFileManager(currentPath);
+    .then((ownerPath) => {
+      fillFileManager(ownerPath).catch(alert);
     })
     .catch((error) => {
-      console.log(error);
+      console.log(error.message);
     });
 }
+
+function onDrivesSelectChanged(text) {
+  fillFileManager(text);
+}
+
+function fillDrivesSelect(jsonData) {
+  //подписка на изменение списка
+  selectElement.addEventListener("change", (event) => {
+    onDrivesSelectChanged(event.target.value);
+  });
+
+  jsonData.forEach((data) => {
+    const option = document.createElement("option");
+    option.value = data;
+    option.textContent = data;
+    selectElement.appendChild(option);
+  });
+}
+
+function copy() {}
