@@ -15,7 +15,7 @@ getDrives();
 fillFileManager(rootPath);
 
 const table = document.getElementById("folder-content");
-var tableContent = document.getElementById("folder-content-list");
+const tableContent = document.getElementById("folder-content-list");
 
 function removeAllListeners(element) {
   element.replaceWith(element.cloneNode(false));
@@ -23,15 +23,14 @@ function removeAllListeners(element) {
 
 function fillTable(data) {
   while (tableContent.childNodes.length) {
-    //на сколько понял нужно убрать всех подписчиков, во избежание утечки памяти
+    //на сколько понимаю нужно убрать всех подписчиков, во избежание утечки памяти
     removeAllListeners(tableContent.childNodes[0]);
     tableContent.removeChild(tableContent.childNodes[0]);
   }
 
-  const tc = document.createElement("tbody");
   // Заполнение таблицы данными
   data.forEach((item) => {
-    const row = tc.insertRow();
+    const row = tableContent.insertRow();
     //для выделения строки
     row.addEventListener("click", function () {
       onContentRowClick(row);
@@ -59,19 +58,9 @@ function fillTable(data) {
       }
     });
   });
-  //для предотвращения построчной отрисовки
-  cloneAttributes(tc, tableContent);
-  tableContent.replaceWith(tc);
-  tableContent = tc;
 }
 
-function cloneAttributes(element, sourceNode) {
-  let attr;
-  let attributes = Array.prototype.slice.call(sourceNode.attributes);
-  while(attr = attributes.pop()) {
-    element.setAttribute(attr.nodeName, attr.nodeValue);
-  }
-}
+
 
 function onContentRowClick(row) {
   if (row.classList.contains("selected-row")) {
