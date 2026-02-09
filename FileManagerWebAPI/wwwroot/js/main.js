@@ -13,8 +13,7 @@ const selectElement = document.querySelector(".select-drive");
 getDrives();
 
 const currentPathElement = document.querySelector(".current-path");
-var currentPath = rootPath;
-currentPathElement.textContent = currentPath;
+currentPathElement.textContent = rootPath;
 var content = document.querySelector(".content-list");
 fillFileManager(rootPath, content);
 
@@ -52,7 +51,6 @@ function fillTable(data, tableContent) {
         cell.style.cursor = "pointer";
         let iconName = iconMap.has(item.type) ? iconMap.get(item.type) : "file";
         //добавляется соответствующая иконка к названию файла
-        //https://habr.com/ru/companies/timeweb/articles/843080/
         cell.insertAdjacentHTML(
           "afterbegin",
           `<i class="fa fa-${iconName}"></i>`,
@@ -86,6 +84,8 @@ function onContentItemDblClick(cell) {
   let type = cell.getAttribute("fileType");
   let path = cell.textContent;
   if (path == undefined) return;
+  let currentPathElement = getCurrentPathElem(cell);
+  let currentPath = currentPathElement.textContent;
   let fullPath = currentPath.endsWith("\\")
     ? currentPath + path
     : currentPath + "\\" + path;
@@ -105,8 +105,8 @@ async function fillFileManager(path, tableContent) {
   if (response.status == 200) {
     let data = await response.json();
     fillTable(data, tableContent);
-    currentPath = path;
-    currentPathElement.textContent = currentPath;
+    let currentPathElement = getCurrentPathElem(tableContent);
+    currentPathElement.textContent = path;
     return;
   }
   let data = await response.json();
@@ -135,6 +135,9 @@ function getDrives() {
 
 function onButtonUpLevelClick(btn) {
   const content = getContentDiv(btn);
+  let currentPathElement = getCurrentPathElem(btn);
+  let currentPath = currentPathElement.textContent;
+
   fetch(`/api/SystemInfo/ownerpath?path=${encodeURIComponent(currentPath)}`)
     .then((response) => response.text())
     .then((ownerPath) => {
@@ -164,9 +167,18 @@ function fillDrivesSelect(jsonData) {
   });
 }
 
+function getParentFileManager(element) {
+  return element.closest(".file-manager");
+}
+
 function getContentDiv(element) {
-  let fileManager = element.closest(".file-manager");
+  let fileManager = getParentFileManager(element);
   return fileManager.querySelector(".content-list");
+}
+
+function getCurrentPathElem(element) {
+  let fileManager = getParentFileManager(element);
+  return fileManager.querySelector(".current-path");
 }
 
 function copy() {}
