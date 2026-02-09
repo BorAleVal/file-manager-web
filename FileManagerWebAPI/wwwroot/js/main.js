@@ -1,5 +1,4 @@
 const rootPath = "C:\\";
-var currentPath = rootPath;
 //todo: нужно придумать решение получше, что бы для одной икноки можно было назначить несоклько расширений
 const iconMap = new Map([
   ["folder", "folder"],
@@ -8,20 +7,24 @@ const iconMap = new Map([
   [".pdf", "file-pdf"],
 ]);
 
-const selectElement = document.getElementById("select-drive");
-const currentPathElement = document.getElementById("current-path");
-currentPathElement.textContent = currentPath;
+const fileManagers = document.getElementById("file-managers");
+const firstFileManager = document.getElementById("first-file-manager");
+const selectElement = document.querySelector(".select-drive");
 getDrives();
-fillFileManager(rootPath);
 
-const table = document.getElementById("folder-content");
-const tableContent = document.getElementById("folder-content-list");
+const currentPathElement = document.querySelector(".current-path");
+var currentPath = rootPath;
+currentPathElement.textContent = currentPath;
+var content = document.querySelector(".content-list");
+fillFileManager(rootPath, content);
+
+//const table = document.getElementById("folder-content");
 
 function removeAllListeners(element) {
   element.replaceWith(element.cloneNode(false));
 }
 
-function fillTable(data) {
+function fillTable(data, tableContent) {
   while (tableContent.childNodes.length) {
     //на сколько понимаю нужно убрать всех подписчиков, во избежание утечки памяти
     removeAllListeners(tableContent.childNodes[0]);
@@ -50,7 +53,10 @@ function fillTable(data) {
         let iconName = iconMap.has(item.type) ? iconMap.get(item.type) : "file";
         //добавляется соответствующая иконка к названию файла
         //https://habr.com/ru/companies/timeweb/articles/843080/
-        cell.insertAdjacentHTML("afterbegin", `<i class="fa fa-${iconName}"></i>`);
+        cell.insertAdjacentHTML(
+          "afterbegin",
+          `<i class="fa fa-${iconName}"></i>`,
+        );
         cell.setAttribute("fileType", item.type);
       } else {
         cell.style.textAlign = "right";
@@ -59,8 +65,6 @@ function fillTable(data) {
     });
   });
 }
-
-
 
 function onContentRowClick(row) {
   if (row.classList.contains("selected-row")) {
@@ -79,7 +83,6 @@ function getSelectedRows() {
 }
 
 function onContentItemDblClick(cell) {
-  console.log("fillFileManagerBtn");
   let type = cell.getAttribute("fileType");
   let path = cell.textContent;
   if (path == undefined) return;
@@ -87,20 +90,21 @@ function onContentItemDblClick(cell) {
     ? currentPath + path
     : currentPath + "\\" + path;
   if (type == "folder") {
-    fillFileManager(fullPath).catch(alert);
+    const tableContent = getContentDiv(cell);
+    fillFileManager(fullPath, tableContent).catch(alert);
   } else {
     runFile(fullPath);
   }
 }
 
-async function fillFileManager(path) {
+async function fillFileManager(path, tableContent) {
   let response = await fetch(
     `/api/SystemInfo/directorycontent?path=${encodeURIComponent(path)}`,
   );
 
   if (response.status == 200) {
     let data = await response.json();
-    fillTable(data);
+    fillTable(data, tableContent);
     currentPath = path;
     currentPathElement.textContent = currentPath;
     return;
@@ -129,33 +133,40 @@ function getDrives() {
     });
 }
 
-function onButtonUpLevelClick() {
+function onButtonUpLevelClick(btn) {
+  const content = getContentDiv(btn);
   fetch(`/api/SystemInfo/ownerpath?path=${encodeURIComponent(currentPath)}`)
     .then((response) => response.text())
     .then((ownerPath) => {
-      fillFileManager(ownerPath).catch(alert);
+      fillFileManager(ownerPath, content).catch(alert);
     })
     .catch((error) => {
       console.log(error.message);
     });
 }
 
-function onDrivesSelectChanged(text) {
-  fillFileManager(text);
+function onDrivesSelectChanged(option) {
+  const tableContent = getContentDiv(option);
+  fillFileManager(option.value, tableContent);
 }
 
 function fillDrivesSelect(jsonData) {
   //подписка на изменение списка
   selectElement.addEventListener("change", (event) => {
-    onDrivesSelectChanged(event.target.value);
+    onDrivesSelectChanged(event.target);
   });
 
   jsonData.forEach((data) => {
     const option = document.createElement("option");
     option.value = data;
     option.textContent = data;
-    selectElement.appendChild(option);
+    selectElement.append(option);
   });
+}
+
+function getContentDiv(element) {
+  let fileManager = element.closest(".file-manager");
+  return fileManager.querySelector(".content-list");
 }
 
 function copy() {}

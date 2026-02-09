@@ -37,7 +37,8 @@
 
     .table-container {
         overflow-y: auto;
-        max-height: calc(100vh - 85px); /*возможно через js лучше вычислить сумму других контролов, но так проще*/
+        max-height: calc(100vh - 85px);
+        /*возможно через js лучше вычислить сумму других контролов, но так проще*/
         border: 1px solid;
         border-color: aqua;
     }
@@ -73,10 +74,12 @@
         bottom: 0;
         border: 1px solid;
         width: 100%;
-    } 
+    }
+
     .fa {
         margin-right: 2px;
     }
+
     .selected-row {
         color: darkgray;
     }
@@ -88,24 +91,26 @@
     <header>
         <h1>File Manager</h1>
     </header>
-    <div class="file-manager">
-        <div class="folder-tools">
-            <select id="select-drive"></select>
-            <button onclick="onButtonUpLevelClick()"><i class="fa-solid fa-level-up"></i></button>
-            <p id="current-path" class="folder-path"></p>
-        </div>
-        <div class="table-container">
-            <table class="content" id="folder-content">
-                <thead>
-                    <tr>
-                        <th>Имя</th>
-                        <th>Размер</th>
-                        <th>Дата изм.</th> 
-                    </tr>
-                </thead>
-                <tbody class="content-list" id="folder-content-list">
-                </tbody>
-            </table>
+    <div id="file-managers">
+        <div class="file-manager" id="first-file-manager">
+            <div class="folder-tools">
+                <select class="select-drive"></select>
+                <button onclick="onButtonUpLevelClick(this)"><i class="fa-solid fa-level-up"></i></button>
+                <p class="current-path"></p>
+            </div>
+            <div class="table-container">
+                <table class="content">
+                    <thead>
+                        <tr>
+                            <th>Имя</th>
+                            <th>Размер</th>
+                            <th>Дата изм.</th>
+                        </tr>
+                    </thead>
+                    <tbody class="content-list">
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
     <div class="bottom-buttons-container">
@@ -119,4 +124,5 @@
     </div>
 </body>
 <script src="js/main.js"></script>
+
 </html>
