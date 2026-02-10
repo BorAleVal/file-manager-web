@@ -1,4 +1,6 @@
-﻿using FileManagerWebAPI.Model;
+﻿using FileManagerWebAPI.DTO;
+using FileManagerWebAPI.Model;
+using FileManagerWebAPI.Tools;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.FileSystemGlobbing.Internal.PathSegments;
@@ -8,6 +10,7 @@ using System.IO;
 using System.Linq;
 using System.Security;
 using System.Security.Permissions;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace FileManagerWebAPI.Controllers
 {
@@ -80,42 +83,48 @@ namespace FileManagerWebAPI.Controllers
             return Ok(result);
         }
 
-        [HttpGet("copyDirectory")]
-        public IActionResult CopyDirectory(string sourcePath, string destinationDirPath)
+        [HttpPost("copyElements")]
+        public IActionResult CopyElements([FromBody]PathCollection pathCollection, string destinationDirPath)
         {
-            if (!Path.Exists(sourcePath))
-                return BadRequest($"файл {sourcePath} не существует");
+            var notExistedFile = pathCollection.Collection.FirstOrDefault(x => !Path.Exists(x));
+            if (notExistedFile != null)
+                //todo: перечислить файлы в сообщении
+                return BadRequest($"файл {notExistedFile} не существует");
+
+            var success = false;
+            foreach (var sourcePath in pathCollection.Collection)
+            {
+                var isDirectory = FileTools.IsDirectory(sourcePath);
+                if (isDirectory)
+                {
+                    success = CopyDirectory(sourcePath, destinationDirPath);
+                }
+                else
+                {
+                    success = FileTools.CopyFile(sourcePath, destinationDirPath);
+                }
+                if (!success)
+                {
+                    return BadRequest($"Не удалось скопировать {(isDirectory ? "файл" : "директорию")} {sourcePath}");
+                }
+            }
+
+            return Ok();
+        }
+
+        public bool CopyDirectory(string sourcePath, string destinationDirPath)
+        {
 
             try
             {
                 CopyDirectory(sourcePath, destinationDirPath, recursive: true);
-                return Ok();
+                return true;
             }
             catch (Exception)
             {
-                throw;
+                return false;
             }
         }
-
-        [HttpGet("copyFile")]
-        public IActionResult CopyFile(string sourcePath, string destinationDirPath)
-        {
-            if (!Path.Exists(sourcePath))
-                return BadRequest($"файл {sourcePath} не существует");
-
-            try
-            {
-                CopyFileTo(sourcePath, destinationDirPath);
-                return Ok();
-
-            }
-            catch (Exception)
-            {
-
-                throw;
-            }
-        }
-
 
         [HttpGet("move")]
         public IActionResult Move(string sourcePath, string destinationDirPath)
@@ -195,10 +204,6 @@ namespace FileManagerWebAPI.Controllers
             return date.ToString("dd.MM.yyyy hh:mm:ss");
         }
 
-        public static void CopyFileTo(string sourceDir, string destinationDir)
-        {
-            new FileInfo(sourceDir).CopyTo(destinationDir);
-        }
 
         public static void CopyDirectory(string sourceDir, string destinationDir, bool recursive)
         {
@@ -242,5 +247,7 @@ namespace FileManagerWebAPI.Controllers
         {
             new DirectoryInfo(path).Delete();
         }
+
+
     }
 }
