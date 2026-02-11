@@ -1,5 +1,4 @@
 ﻿using FileManagerWebAPI.DTO;
-using FileManagerWebAPI.Model;
 using FileManagerWebAPI.Tools;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -11,7 +10,6 @@ using System.Linq;
 using System.Security;
 using System.Security.Permissions;
 using System.Xml.Linq;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace FileManagerWebAPI.Controllers
 {
@@ -27,10 +25,9 @@ namespace FileManagerWebAPI.Controllers
             if (!directory.Exists)
                 return BadRequest(new { message = "директория не существует" });
 
-            //todo: добавить проверку на доступ на чтение
             try
             {
-                IEnumerable<FileData> content = GetPathContent(directory);
+                IEnumerable<PathData> content = PathTools.GetContent(directory);
                 return Ok(content);
             }
             catch (Exception ex)
@@ -85,7 +82,7 @@ namespace FileManagerWebAPI.Controllers
         }
 
         [HttpPost("transferElements")]
-        public IActionResult transferElements([FromBody] TransferData transferData)
+        public IActionResult TransferElements([FromBody] TransferData transferData)
         {
             if (!Path.Exists(transferData.DestinationPath))
                 return BadRequest($"файл {transferData.DestinationPath} не существует");
@@ -98,19 +95,18 @@ namespace FileManagerWebAPI.Controllers
             foreach (var name in transferData.NameCollection)
             {
                 var sourcePath = Path.Combine(transferData.SourcePath, name);
-                var isDirectory = FileTools.IsDirectory(sourcePath);
+                var isDirectory = PathTools.IsDirectory(sourcePath);
                 if (transferData.IsCopy)
                 {
                     success = isDirectory
-                        ? FileTools.CopyDirectory(sourcePath, transferData.DestinationPath)
-                        : FileTools.CopyFile(sourcePath, transferData.DestinationPath);
+                        ? PathTools.CopyDirectory(sourcePath, transferData.DestinationPath)
+                        : PathTools.CopyFile(sourcePath, transferData.DestinationPath);
                 }
                 else
                 {
-                    //success = FileTools.MoveFile(sourcePath, transferData.DestinationPath); 
                     success =isDirectory
-                        ? FileTools.MoveDirectory(sourcePath, transferData.DestinationPath)
-                        : FileTools.MoveFile(sourcePath, transferData.DestinationPath);
+                        ? PathTools.MoveDirectory(sourcePath, transferData.DestinationPath)
+                        : PathTools.MoveFile(sourcePath, transferData.DestinationPath);
                 }
                 if (!success)
                 {
@@ -132,10 +128,10 @@ namespace FileManagerWebAPI.Controllers
             foreach (var name in transferData.NameCollection)
             {
                 var sourcePath = Path.Combine(transferData.SourcePath, name);
-                var isDirectory = FileTools.IsDirectory(sourcePath);
+                var isDirectory = PathTools.IsDirectory(sourcePath);
                     success = isDirectory
-                        ? FileTools.DeleteDirectory(sourcePath)
-                        : FileTools.DeleteFile(sourcePath);
+                        ? PathTools.DeleteDirectory(sourcePath)
+                        : PathTools.DeleteFile(sourcePath);
                 if (!success)
                 {
                     return BadRequest($"Не удалось скопировать {(isDirectory ? "файл" : "директорию")} {sourcePath}");
@@ -145,46 +141,5 @@ namespace FileManagerWebAPI.Controllers
             return Ok();
         }
 
-        private static IEnumerable<FileData> GetPathContent(DirectoryInfo directory)
-        {
-            var files = directory.GetFiles().Select(x =>
-                new FileData(
-                    x.Name,
-                    GetFormattedSize(x.Length),
-                    GetUserFriendlyDateString(x.LastWriteTime),
-                    x.Extension));
-
-            var dirs = directory.GetDirectories().Select(x =>
-                new FileData(
-                    x.Name,
-                    "",
-                    GetUserFriendlyDateString(x.LastWriteTime),
-                    "folder"));
-
-            return dirs.Concat(files);
-        }
-
-        private static string GetFormattedSize(long size)
-        {
-            if (size < 0)
-                return "undefined";
-
-            //todo: вынести в ридонли поле
-            string[] units = { "б", "Кб", "Мб", "Гб", "Тб", "Пб" };
-            double formattedSize = size;
-            int i = 0;
-            while (formattedSize >= 1024 && i < units.Length - 1)
-            {
-                i++;
-                formattedSize = formattedSize / 1024;
-            }
-            var formattedSizeStr = formattedSize.ToString("0.#", CultureInfo.InvariantCulture);
-            return $"{formattedSizeStr} {units[i]}";
-        }
-
-        public static string GetUserFriendlyDateString(DateTime date)
-        {
-            return date.ToString("dd.MM.yyyy hh:mm:ss");
-        }
     }
 }

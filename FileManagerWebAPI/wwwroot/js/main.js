@@ -1,7 +1,7 @@
 const rootPath = "C:\\";
 //todo: нужно придумать решение получше, что бы для одной икноки можно было назначить несоклько расширений
 const iconMap = new Map([
-  ["folder", "folder"],
+  ["dir", "folder"],
   [".xlsx", "file-excel"],
   [".xls", "file-excel"],
   [".pdf", "file-pdf"],
@@ -84,7 +84,7 @@ function onContentItemDblClick(cell) {
   let currentPath = currentPathElement.textContent;
   let fullPath = getFullPath(currentPath, elementName);
 
-  if (type == "folder") {
+  if (type == "dir") {
     const tableContent = getContentDiv(cell);
     refreshFileManager(fullPath, tableContent).catch(alert);
   } else {
