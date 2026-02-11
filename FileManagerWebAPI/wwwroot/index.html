@@ -21,17 +21,16 @@
         display: flex;
     }
 
-        .folder-tools p {
-            margin: 0 0 0 5px;
-            white-space: nowrap;
-            overflow: auto;
-            text-overflow: ellipsis;
-        }
+    .folder-tools p {
+        margin: 0 0 0 5px;
+        white-space: nowrap;
+        overflow: auto;
+        text-overflow: ellipsis;
+    }
 
     .table-container {
         overflow: auto;
-        max-height: calc(100vh - 85px);
-        /*возможно через js лучше вычислить сумму других контролов, но так проще*/
+        height: calc(100vh - 120px);
         border: 1px solid;
         border-color: aqua;
     }
@@ -40,30 +39,37 @@
         margin: 0px;
         border: 1px solid;
         border-radius: 1px;
-        width: 48vw;
         border-collapse: collapse;
         color: aqua;
+        width: 100%;
+        overflow-x: hidden;
     }
 
-        .content th {
-            background-color: darkblue;
-            color: yellow;
-            border-color: aqua;
-            position: sticky;
-            top: 0;
-        }
+    .content th {
+        background-color: darkblue;
+        color: yellow;
+        border-color: aqua;
+        position: sticky;
+        top: 0;
+    }
 
-        .content td,
-        th {
-            padding: 2px;
-            overflow: hidden;
-            white-space: nowrap;
-            text-overflow: ellipsis;
-            border: 1px solid;
-        }
+    .content td,
+    th {
+        padding: 2px;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        border: 1px solid;
+    }
+
+    td:nth-child(2),
+    td:nth-child(3) {
+        text-align: "right";
+        width: 60px;
+    }
 
     .bottom-buttons {
-        position: fixed;
+        position: sticky;
         bottom: 0;
         border: 1px solid;
         width: 100%;
@@ -77,12 +83,21 @@
         color: darkgray;
     }
 
-    .file-managers {
+    .file-managers-container {
         display: flex;
+    }
+
+    .file-manager {
+        border: 1px solid;
+        width: 50vw;
+    }
+
+    tbody tr:hover {
+        background: midnightblue;
     }
 </style>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css"
-      crossorigin="anonymous" referrerpolicy="no-referrer" />
+    crossorigin="anonymous" referrerpolicy="no-referrer" />
 
 <!doctype html>
 <html>
@@ -91,11 +106,12 @@
     <meta charset="utf-8" />
     <title>Simple File Manager</title>
 </head>
+
 <body>
     <header>
         <h1>File Manager</h1>
     </header>
-    <div id="file-managers" class="file-managers">
+    <div id="file-managers-container" class="file-managers-container">
         <div class="file-manager">
             <div class="folder-tools">
                 <select class="select-drive"></select>
@@ -115,18 +131,15 @@
                     </tbody>
                 </table>
             </div>
-        </div>
-    </div>
-    <div class="bottom-buttons-container">
-        <div class="bottom-buttons">
-            <div>
-                <select id="select-direction" title="направление копирования/переноса">
-                    <option value="left-right" title="слева-направо">▶</option>
-                    <option value="right-left" title="справа-налево">◀</option>
-                </select>
-                <button onclick="copy()"><i class="fa-solid fa-copy"></i>Copy</button>
-                <button onclick="move()"><i class="fa-solid fa-level-down"></i>Move</button>
-                <button onclick="deleteFile()"><i class="fa-solid fa-scissors"></i>Delete</button>
+            <div class="bottom-buttons-container">
+                <div class="bottom-buttons">
+                    <div>
+                        <button onclick="transferElements(this, true)"><i class="fa-solid fa-copy"></i>Copy</button>
+                        <button onclick="transferElements(this, false)"><i
+                                class="fa-solid fa-level-down"></i>Move</button>
+                        <button onclick="deleteElements(this)"><i class="fa-solid fa-scissors"></i>Delete</button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

@@ -10,6 +10,7 @@ using System.IO;
 using System.Linq;
 using System.Security;
 using System.Security.Permissions;
+using System.Xml.Linq;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace FileManagerWebAPI.Controllers
@@ -83,25 +84,33 @@ namespace FileManagerWebAPI.Controllers
             return Ok(result);
         }
 
-        [HttpPost("copyElements")]
-        public IActionResult CopyElements([FromBody]PathCollection pathCollection, string destinationDirPath)
+        [HttpPost("transferElements")]
+        public IActionResult transferElements([FromBody] TransferData transferData)
         {
-            var notExistedFile = pathCollection.Collection.FirstOrDefault(x => !Path.Exists(x));
+            if (!Path.Exists(transferData.DestinationPath))
+                return BadRequest($"файл {transferData.DestinationPath} не существует");
+
+            var notExistedFile = transferData.NameCollection.FirstOrDefault(x => !Path.Exists(Path.Combine(transferData.SourcePath, x)));
             if (notExistedFile != null)
-                //todo: перечислить файлы в сообщении
                 return BadRequest($"файл {notExistedFile} не существует");
 
             var success = false;
-            foreach (var sourcePath in pathCollection.Collection)
+            foreach (var name in transferData.NameCollection)
             {
+                var sourcePath = Path.Combine(transferData.SourcePath, name);
                 var isDirectory = FileTools.IsDirectory(sourcePath);
-                if (isDirectory)
+                if (transferData.IsCopy)
                 {
-                    success = CopyDirectory(sourcePath, destinationDirPath);
+                    success = isDirectory
+                        ? FileTools.CopyDirectory(sourcePath, transferData.DestinationPath)
+                        : FileTools.CopyFile(sourcePath, transferData.DestinationPath);
                 }
                 else
                 {
-                    success = FileTools.CopyFile(sourcePath, destinationDirPath);
+                    //success = FileTools.MoveFile(sourcePath, transferData.DestinationPath); 
+                    success =isDirectory
+                        ? FileTools.MoveDirectory(sourcePath, transferData.DestinationPath)
+                        : FileTools.MoveFile(sourcePath, transferData.DestinationPath);
                 }
                 if (!success)
                 {
@@ -112,54 +121,28 @@ namespace FileManagerWebAPI.Controllers
             return Ok();
         }
 
-        public bool CopyDirectory(string sourcePath, string destinationDirPath)
+        [HttpPost("deleteElements")]
+        public IActionResult DeleteElements([FromBody] TransferData transferData)
         {
+            var notExistedFile = transferData.NameCollection.FirstOrDefault(x => !Path.Exists(Path.Combine(transferData.SourcePath, x)));
+            if (notExistedFile != null)
+                return BadRequest($"файл {notExistedFile} не существует");
 
-            try
+            var success = false;
+            foreach (var name in transferData.NameCollection)
             {
-                CopyDirectory(sourcePath, destinationDirPath, recursive: true);
-                return true;
+                var sourcePath = Path.Combine(transferData.SourcePath, name);
+                var isDirectory = FileTools.IsDirectory(sourcePath);
+                    success = isDirectory
+                        ? FileTools.DeleteDirectory(sourcePath)
+                        : FileTools.DeleteFile(sourcePath);
+                if (!success)
+                {
+                    return BadRequest($"Не удалось скопировать {(isDirectory ? "файл" : "директорию")} {sourcePath}");
+                }
             }
-            catch (Exception)
-            {
-                return false;
-            }
-        }
 
-        [HttpGet("move")]
-        public IActionResult Move(string sourcePath, string destinationDirPath)
-        {
-            if (!Path.Exists(sourcePath))
-                return BadRequest($"файл {sourcePath} не существует");
-
-            try
-            {
-                Directory.Move(sourcePath, destinationDirPath);
-                return Ok();
-            }
-            catch
-            {
-                return BadRequest();
-            }
-        }
-
-        [HttpGet("delete")]
-        public IActionResult Delete(string path)
-        {
-            if (!Path.Exists(path))
-                return BadRequest($"файл {path} не существует");
-
-            try
-            {
-                DeleteFile(path);
-                return Ok();
-
-            }
-            catch (Exception)
-            {
-
-                throw;
-            }
+            return Ok();
         }
 
         private static IEnumerable<FileData> GetPathContent(DirectoryInfo directory)
@@ -203,51 +186,5 @@ namespace FileManagerWebAPI.Controllers
         {
             return date.ToString("dd.MM.yyyy hh:mm:ss");
         }
-
-
-        public static void CopyDirectory(string sourceDir, string destinationDir, bool recursive)
-        {
-            // Get information about the source directory
-            var dir = new DirectoryInfo(sourceDir);
-
-            // Check if the source directory exists
-            if (!dir.Exists)
-                throw new DirectoryNotFoundException($"Source directory not found: {dir.FullName}");
-
-            // Cache directories before we start copying
-            DirectoryInfo[] dirs = dir.GetDirectories();
-
-            // Create the destination directory
-            Directory.CreateDirectory(destinationDir);
-
-            // Get the files in the source directory and copy to the destination directory
-            foreach (FileInfo file in dir.GetFiles())
-            {
-                string targetFilePath = Path.Combine(destinationDir, file.Name);
-                file.CopyTo(targetFilePath);
-            }
-
-            // If recursive and copying subdirectories, recursively call this method
-            if (recursive)
-            {
-                foreach (DirectoryInfo subDir in dirs)
-                {
-                    string newDestinationDir = Path.Combine(destinationDir, subDir.Name);
-                    CopyDirectory(subDir.FullName, newDestinationDir, true);
-                }
-            }
-        }
-
-        private static void DeleteFile(string path)
-        {
-            new FileInfo(path).Delete();
-        }
-
-        private static void DeleteDirectory(string path)
-        {
-            new DirectoryInfo(path).Delete();
-        }
-
-
     }
 }

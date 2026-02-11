@@ -1,12 +1,12 @@
 const rootPath = "C:\\";
 //todo: нужно придумать решение получше, что бы для одной икноки можно было назначить несоклько расширений
 const iconMap = new Map([
-    ["folder", "folder"],
-    [".xlsx", "file-excel"],
-    [".xls", "file-excel"],
-    [".pdf", "file-pdf"],
+  ["folder", "folder"],
+  [".xlsx", "file-excel"],
+  [".xls", "file-excel"],
+  [".pdf", "file-pdf"],
 ]);
-const fileManagers = document.getElementById("file-managers");
+const fileManagers = document.getElementById("file-managers-container");
 const firstFileManager = document.querySelector(".file-manager");
 
 const currentPathElement = document.querySelector(".current-path");
@@ -18,216 +18,260 @@ const firstContent = getContentDivByFileManager(firstFileManager);
 const secondContent = getContentDivByFileManager(secondFileManager);
 const directionSelect = document.getElementById("select-direction");
 fillDrives();
-fillFileManager(rootPath, firstContent);
-fillFileManager(rootPath, secondContent);
+refreshFileManager(rootPath, firstContent);
+refreshFileManager(rootPath, secondContent);
 
 function removeAllListeners(element) {
-    element.replaceWith(element.cloneNode(false));
+  element.replaceWith(element.cloneNode(false));
 }
 
 function fillTable(data, tableContent) {
-    while (tableContent.childNodes.length) {
-        //на сколько понимаю нужно убрать всех подписчиков, во избежание утечки памяти
-        removeAllListeners(tableContent.childNodes[0]);
-        tableContent.removeChild(tableContent.childNodes[0]);
-    }
+  while (tableContent.childNodes.length) {
+    //на сколько понимаю нужно убрать всех подписчиков, во избежание утечки памяти
+    removeAllListeners(tableContent.childNodes[0]);
+    tableContent.removeChild(tableContent.childNodes[0]);
+  }
 
-    // Заполнение таблицы данными
-    data.forEach((item) => {
-        const row = tableContent.insertRow();
-        //для выделения строки
-        row.addEventListener("click", function () {
-            onContentRowClick(row);
-        });
-
-        Object.entries(item).forEach(([key, value]) => {
-            if (key == "type") return;
-
-            const cell = row.insertCell();
-            cell.textContent = value;
-            if (key == "name") {
-                cell.addEventListener("dblclick", function () {
-                    onContentItemDblClick(cell);
-                });
-
-                cell.classList.add("name");
-                cell.style.cursor = "pointer";
-                let iconName = iconMap.has(item.type) ? iconMap.get(item.type) : "file";
-                //добавляется соответствующая иконка к названию файла
-                cell.insertAdjacentHTML(
-                    "afterbegin",
-                    `<i class="fa fa-${iconName}"></i>`,
-                );
-                cell.setAttribute("fileType", item.type);
-            } else {
-                cell.style.textAlign = "right";
-                cell.style.width = "60px";
-            }
-        });
+  // Заполнение таблицы данными
+  data.forEach((item) => {
+    const row = tableContent.insertRow();
+    //для выделения строки
+    row.addEventListener("click", function () {
+      onContentRowClick(row);
     });
+
+    Object.entries(item).forEach(([key, value]) => {
+      if (key == "type") return;
+
+      const cell = row.insertCell();
+      cell.textContent = value;
+      if (key == "name") {
+        cell.addEventListener("dblclick", function () {
+          onContentItemDblClick(cell);
+        });
+
+        cell.classList.add("name");
+        cell.style.cursor = "pointer";
+        let iconName = iconMap.has(item.type) ? iconMap.get(item.type) : "file";
+        //добавляется соответствующая иконка к названию файла
+        cell.insertAdjacentHTML(
+          "afterbegin",
+          `<i class="fa fa-${iconName}"></i>`,
+        );
+        cell.setAttribute("fileType", item.type);
+        cell.style.width = "auto";
+      } else {
+        //cell.style.textAlign = "right";
+        //cell.style.width = "60px";
+      }
+    });
+  });
 }
 
 function onContentRowClick(row) {
-    if (row.classList.contains("selected-row")) {
-        row.classList.remove("selected-row");
-    } else {
-        row.classList.add("selected-row");
-    }
+  if (row.classList.contains("selected-row")) {
+    row.classList.remove("selected-row");
+  } else {
+    row.classList.add("selected-row");
+  }
 }
 function onContentItemDblClick(cell) {
-    let type = cell.getAttribute("fileType");
-    let elementName = cell.textContent;
-    if (elementName == undefined) return;
+  let type = cell.getAttribute("fileType");
+  let elementName = cell.textContent;
+  if (elementName == undefined) return;
 
-    let currentPathElement = getCurrentPathElem(cell);
-    let currentPath = currentPathElement.textContent;
-    let fullPath = getFullPath(currentPath, elementName);
+  let currentPathElement = getCurrentPathElem(cell);
+  let currentPath = currentPathElement.textContent;
+  let fullPath = getFullPath(currentPath, elementName);
 
-    if (type == "folder") {
-        const tableContent = getContentDiv(cell);
-        fillFileManager(fullPath, tableContent).catch(alert);
-    } else {
-        runFile(fullPath);
-    }
+  if (type == "folder") {
+    const tableContent = getContentDiv(cell);
+    refreshFileManager(fullPath, tableContent).catch(alert);
+  } else {
+    runFile(fullPath);
+  }
 }
 
-async function fillFileManager(path, tableContent) {
-    let response = await fetch(
-        `/api/SystemInfo/directorycontent?path=${encodeURIComponent(path)}`,
-    );
+async function refreshFileManager(path, tableContent) {
+  let response = await fetch(
+    `/api/SystemInfo/directorycontent?path=${encodeURIComponent(path)}`,
+  );
 
-    if (response.status == 200) {
-        let data = await response.json();
-        fillTable(data, tableContent);
-        let currentPathElement = getCurrentPathElem(tableContent);
-        currentPathElement.textContent = path;
-        return;
-    }
+  if (response.status == 200) {
     let data = await response.json();
-    throw new Error(data.message);
+    fillTable(data, tableContent);
+    let currentPathElement = getCurrentPathElem(tableContent);
+    currentPathElement.textContent = path;
+    return;
+  }
+  let data = await response.json();
+  throw new Error(data.message);
 }
 
 function runFile(path) {
-    fetch(`/api/SystemInfo/runfile?filepath=${encodeURIComponent(path)}`).catch(
-        (error) => {
-            console.log(error.message);
-        },
-    );
+  fetch(`/api/SystemInfo/runfile?filepath=${encodeURIComponent(path)}`).catch(
+    (error) => {
+      console.log(error.message);
+    },
+  );
 }
 
 function fillDrives() {
-    fetch("/api/SystemInfo/harddrives")
-        .then((response) => response.json())
-        .then((data) => {
-            fillDrivesSelect(data);
-            return true;
-        })
-        .catch((error) => {
-            console.log(error.message);
-        });
+  fetch("/api/SystemInfo/harddrives")
+    .then((response) => response.json())
+    .then((data) => {
+      fillDrivesSelect(data);
+      return true;
+    })
+    .catch((error) => {
+      console.log(error.message);
+    });
 }
 
 function onButtonUpLevelClick(btn) {
-    const content = getContentDiv(btn);
-    let currentPathElement = getCurrentPathElem(btn);
-    let currentPath = currentPathElement.textContent;
+  const content = getContentDiv(btn);
+  let currentPathElement = getCurrentPathElem(btn);
+  let currentPath = currentPathElement.textContent;
 
-    fetch(`/api/SystemInfo/ownerpath?path=${encodeURIComponent(currentPath)}`)
-        .then((response) => response.text())
-        .then((ownerPath) => {
-            fillFileManager(ownerPath, content).catch(alert);
-        })
-        .catch((error) => {
-            console.log(error.message);
-        });
+  fetch(`/api/SystemInfo/ownerpath?path=${encodeURIComponent(currentPath)}`)
+    .then((response) => response.text())
+    .then((ownerPath) => {
+      refreshFileManager(ownerPath, content).catch(alert);
+    })
+    .catch((error) => {
+      console.log(error.message);
+    });
 }
 
 function onDrivesSelectChanged(option) {
-    const tableContent = getContentDiv(option);
-    fillFileManager(option.value, tableContent);
+  const tableContent = getContentDiv(option);
+  refreshFileManager(option.value, tableContent);
 }
 
 function fillDrivesSelect(jsonData) {
-    const driveSelectElements = document.querySelectorAll(".select-drive");
-    driveSelectElements.forEach((driveSelectElement) => {
-        //подписка на изменение списка
-        driveSelectElement.addEventListener("change", (event) => {
-            onDrivesSelectChanged(event.target);
-        });
-
-        jsonData.forEach((data) => {
-            const option = document.createElement("option");
-            option.value = data;
-            option.textContent = data;
-            driveSelectElement.append(option);
-        });
+  const driveSelectElements = document.querySelectorAll(".select-drive");
+  driveSelectElements.forEach((driveSelectElement) => {
+    //подписка на изменение списка
+    driveSelectElement.addEventListener("change", (event) => {
+      onDrivesSelectChanged(event.target);
     });
+
+    jsonData.forEach((data) => {
+      const option = document.createElement("option");
+      option.value = data;
+      option.textContent = data;
+      driveSelectElement.append(option);
+    });
+  });
 }
 
 function getParentFileManager(element) {
-    return element.closest(".file-manager");
+  return element.closest(".file-manager");
 }
 
 function getContentDiv(element) {
-    let fileManager = getParentFileManager(element);
-    return getContentDivByFileManager(fileManager);
+  let fileManager = getParentFileManager(element);
+  return getContentDivByFileManager(fileManager);
 }
 
 function getContentDivByFileManager(fileManager) {
-    return fileManager.querySelector(".content-list");
+  return fileManager.querySelector(".content-list");
 }
 
 function getCurrentPathElem(element) {
-    let fileManager = getParentFileManager(element);
-    return getCurrentPathElemByFileManager(fileManager);
+  let fileManager = getParentFileManager(element);
+  return getCurrentPathElemByFileManager(fileManager);
 }
 
 function getCurrentPathElemByFileManager(fileManager) {
-    return fileManager.querySelector(".current-path");
+  return fileManager.querySelector(".current-path");
+}
+
+function getCurrentPathByFileManager(fileManager) {
+  let element = getCurrentPathElemByFileManager(fileManager);
+  return element.textContent;
 }
 
 function getFullPath(path, elementName) {
-    return path.endsWith("\\") ? path + elementName : path + "\\" + elementName;
+  return path.endsWith("\\") ? path + elementName : path + "\\" + elementName;
 }
 
-function copy() {
-    let direction = directionSelect.value;
-    let copyFrom = firstFileManager;
-    let copyTo = secondFileManager;
-    if (direction == "right-left") {
-        copyFrom = secondFileManager;
-        copyTo = firstFileManager;
-    }
+function getSelectedNames(fileManager) {
+  let selectedItems = fileManager.querySelectorAll(".selected-row");
 
-    let selectedItems = copyFrom.querySelectorAll(".selected-row");
-    let currentPathElementFrom = getCurrentPathElemByFileManager(copyFrom);
-    let currentPathFrom = currentPathElementFrom.textContent;
+  let seletedNames = Array.from(selectedItems).map((item) => {
+    var pathCell = item.querySelector(".name");
+    return pathCell.textContent;
+  });
+  return seletedNames;
+}
 
-    let pathList = Array.from(selectedItems).map(item => {
-        var pathCell = item.querySelector(".name");
-        return getFullPath(currentPathFrom, pathCell.textContent);
+//перемещение/копирование выделенных элементов
+function transferElements(btn, isCopy) {
+  let transferFromMngr = getParentFileManager(btn);
+  let transferToMngr =
+    transferFromMngr == firstFileManager ? secondFileManager : firstFileManager;
+  let currentPathFrom = getCurrentPathByFileManager(transferFromMngr);
+  let currentPathTo = getCurrentPathByFileManager(transferToMngr);
+  let selectedNames = getSelectedNames(transferFromMngr);
+
+  fetch("/api/SystemInfo/transferelements", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      NameCollection: selectedNames,
+      SourcePath: currentPathFrom,
+      DestinationPath: currentPathTo,
+      IsCopy: isCopy,
+    }),
+  })
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error("HTTP error " + response.status);
+      }
+
+      refreshFileManager(
+        getCurrentPathByFileManager(firstFileManager),
+        getContentDivByFileManager(firstFileManager),
+      );
+      refreshFileManager(
+        getCurrentPathByFileManager(secondFileManager),
+        getContentDivByFileManager(secondFileManager),
+      );
+    })
+    .catch((error) => {
+      console.log(error.message);
     });
+}
 
-    let currentPathElementTo = getCurrentPathElemByFileManager(copyTo);
-    let currentPathTo = currentPathElementTo.textContent;
-    fetch(
-        `/api/SystemInfo/copyelements?destinationDirPath=${encodeURIComponent(currentPathTo)}`,
-        {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-                collection: pathList,
-            }),
-        },
-    )
-        .then((response) => {
-            if (!response.ok) {
-                throw new Error("HTTP error " + response.status);
-            }
-        })
-        .catch((error) => {
-            console.log(error.message);
-        });
+function deleteElements(btn) {
+  let deleteFromMngr = getParentFileManager(btn);
+  let currentPath = getCurrentPathByFileManager(deleteFromMngr);
+  let selectedNames = getSelectedNames(deleteFromMngr);
+
+  fetch("/api/SystemInfo/deleteelements", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      NameCollection: selectedNames,
+        SourcePath: currentPath,
+    }),
+  })
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error("HTTP error " + response.status);
+      }
+
+      refreshFileManager(
+        getCurrentPathByFileManager(deleteFromMngr),
+        getContentDivByFileManager(deleteFromMngr),
+      );
+    })
+    .catch((error) => {
+      console.log(error.message);
+    });
 }
