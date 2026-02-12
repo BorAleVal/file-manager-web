@@ -27,7 +27,7 @@ namespace FileManagerWebAPI.Controllers
 
             try
             {
-                IEnumerable<PathData> content = PathTools.GetContent(directory);
+                var content = PathTools.GetContent(directory);
                 return Ok(content);
             }
             catch (Exception ex)
@@ -41,6 +41,7 @@ namespace FileManagerWebAPI.Controllers
         {
             if (!Directory.Exists(path))
                 return BadRequest("директория не существует");
+
             var ownerPath = Path.GetDirectoryName(path);
 
             if (ownerPath == null)
@@ -140,6 +141,5 @@ namespace FileManagerWebAPI.Controllers
 
             return Ok();
         }
-
     }
 }

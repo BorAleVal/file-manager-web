@@ -1,4 +1,3 @@
-const rootPath = "C:\\";
 //todo: нужно придумать решение получше, что бы для одной икноки можно было назначить несоклько расширений
 const iconMap = new Map([
   ["dir", "folder"],
@@ -9,17 +8,12 @@ const iconMap = new Map([
 const fileManagers = document.getElementById("file-managers-container");
 const firstFileManager = document.querySelector(".file-manager");
 
-const currentPathElement = document.querySelector(".current-path");
-currentPathElement.textContent = rootPath;
-
 const secondFileManager = firstFileManager.cloneNode(true);
 fileManagers.append(secondFileManager);
 const firstContent = getContentDivByFileManager(firstFileManager);
 const secondContent = getContentDivByFileManager(secondFileManager);
 const directionSelect = document.getElementById("select-direction");
-fillDrives();
-refreshFileManager(rootPath, firstContent);
-refreshFileManager(rootPath, secondContent);
+fillFileManagers();
 
 function removeAllListeners(element) {
   element.replaceWith(element.cloneNode(false));
@@ -86,13 +80,13 @@ function onContentItemDblClick(cell) {
 
   if (type == "dir") {
     const tableContent = getContentDiv(cell);
-    refreshFileManager(fullPath, tableContent).catch(alert);
+    refreshFileManagerContent(fullPath, tableContent).catch(alert);
   } else {
     runFile(fullPath);
   }
 }
 
-async function refreshFileManager(path, tableContent) {
+async function refreshFileManagerContent(path, tableContent) {
   let response = await fetch(
     `/api/SystemInfo/directorycontent?path=${encodeURIComponent(path)}`,
   );
@@ -116,16 +110,17 @@ function runFile(path) {
   );
 }
 
-function fillDrives() {
-  fetch("/api/SystemInfo/harddrives")
-    .then((response) => response.json())
-    .then((data) => {
-      fillDrivesSelect(data);
-      return true;
-    })
-    .catch((error) => {
-      console.log(error.message);
-    });
+async function fillFileManagers() {
+    //todo: сделать await, т.к.контент нужно заполнить после того как отработает promise
+    try {
+        const response = await fetch("/api/SystemInfo/harddrives");
+        const data = await response.json();
+        fillDrivesSelect(data);
+        refreshFileManagerContent(data[0], firstContent);
+        refreshFileManagerContent(data[0], secondContent);
+    } catch (error) {
+        console.error(error.message);
+    }
 }
 
 function onButtonUpLevelClick(btn) {
@@ -136,7 +131,7 @@ function onButtonUpLevelClick(btn) {
   fetch(`/api/SystemInfo/ownerpath?path=${encodeURIComponent(currentPath)}`)
     .then((response) => response.text())
     .then((ownerPath) => {
-      refreshFileManager(ownerPath, content).catch(alert);
+      refreshFileManagerContent(ownerPath, content).catch(alert);
     })
     .catch((error) => {
       console.log(error.message);
@@ -145,10 +140,10 @@ function onButtonUpLevelClick(btn) {
 
 function onDrivesSelectChanged(option) {
   const tableContent = getContentDiv(option);
-  refreshFileManager(option.value, tableContent);
+  refreshFileManagerContent(option.value, tableContent);
 }
 
-function fillDrivesSelect(jsonData) {
+function fillDrivesSelect(drives) {
   const driveSelectElements = document.querySelectorAll(".select-drive");
   driveSelectElements.forEach((driveSelectElement) => {
     //подписка на изменение списка
@@ -156,7 +151,7 @@ function fillDrivesSelect(jsonData) {
       onDrivesSelectChanged(event.target);
     });
 
-    jsonData.forEach((data) => {
+    drives.forEach((data) => {
       const option = document.createElement("option");
       option.value = data;
       option.textContent = data;
@@ -232,11 +227,11 @@ function transferElements(btn, isCopy) {
         throw new Error("HTTP error " + response.status);
       }
 
-      refreshFileManager(
+      refreshFileManagerContent(
         getCurrentPathByFileManager(firstFileManager),
         getContentDivByFileManager(firstFileManager),
       );
-      refreshFileManager(
+      refreshFileManagerContent(
         getCurrentPathByFileManager(secondFileManager),
         getContentDivByFileManager(secondFileManager),
       );
@@ -266,7 +261,7 @@ function deleteElements(btn) {
         throw new Error("HTTP error " + response.status);
       }
 
-      refreshFileManager(
+      refreshFileManagerContent(
         getCurrentPathByFileManager(deleteFromMngr),
         getContentDivByFileManager(deleteFromMngr),
       );
