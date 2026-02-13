@@ -13,6 +13,9 @@ using System.Xml.Linq;
 
 namespace FileManagerWebAPI.Controllers
 {
+    /// <summary>
+    /// Контроллер работающий с файлами и директориями системы.
+    /// </summary>
     [Route("api/[controller]")]
     [ApiController]
     public class SystemInfoController : ControllerBase
@@ -58,19 +61,12 @@ namespace FileManagerWebAPI.Controllers
 
             try
             {
-                var p = new Process();
-                p.StartInfo = new ProcessStartInfo(filePath)
-                {
-                    UseShellExecute = true
-                };
-                p.Start();
-
+                PathTools.RunFile(filePath);
                 return Ok();
-
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                throw;
+                return BadRequest($"Ну удалось запустить файл {filePath}: {ex.Message}");
             }
         }
 
@@ -92,30 +88,35 @@ namespace FileManagerWebAPI.Controllers
             if (notExistedFile != null)
                 return BadRequest($"файл {notExistedFile} не существует");
 
-            var success = false;
-            foreach (var name in transferData.NameCollection)
+            try
             {
-                var sourcePath = Path.Combine(transferData.SourcePath, name);
-                var isDirectory = PathTools.IsDirectory(sourcePath);
-                if (transferData.IsCopy)
+                foreach (var name in transferData.NameCollection)
                 {
-                    success = isDirectory
-                        ? PathTools.CopyDirectory(sourcePath, transferData.DestinationPath)
-                        : PathTools.CopyFile(sourcePath, transferData.DestinationPath);
+                    var sourcePath = Path.Combine(transferData.SourcePath, name);
+                    var isDirectory = PathTools.IsDirectory(sourcePath);
+                    if (transferData.IsCopy)
+                    {
+                        if (isDirectory)
+                            PathTools.CopyDirectory(sourcePath, transferData.DestinationPath);
+                        else
+                            PathTools.CopyFile(sourcePath, transferData.DestinationPath);
+                    }
+                    else
+                    {
+                        if (isDirectory)
+                            PathTools.MoveDirectory(sourcePath, transferData.DestinationPath);
+                        else
+                            PathTools.MoveFile(sourcePath, transferData.DestinationPath);
+                    }
                 }
-                else
-                {
-                    success =isDirectory
-                        ? PathTools.MoveDirectory(sourcePath, transferData.DestinationPath)
-                        : PathTools.MoveFile(sourcePath, transferData.DestinationPath);
-                }
-                if (!success)
-                {
-                    return BadRequest($"Не удалось скопировать {(isDirectory ? "файл" : "директорию")} {sourcePath}");
-                }
-            }
 
-            return Ok();
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"Не удалось {(transferData.IsCopy ? "скопировать" : "переместить")}:" +
+                    $"\n {ex.Message}");
+            }
         }
 
         [HttpPost("deleteElements")]
@@ -125,21 +126,25 @@ namespace FileManagerWebAPI.Controllers
             if (notExistedFile != null)
                 return BadRequest($"файл {notExistedFile} не существует");
 
-            var success = false;
-            foreach (var name in transferData.NameCollection)
+            try
             {
-                var sourcePath = Path.Combine(transferData.SourcePath, name);
-                var isDirectory = PathTools.IsDirectory(sourcePath);
-                    success = isDirectory
-                        ? PathTools.DeleteDirectory(sourcePath)
-                        : PathTools.DeleteFile(sourcePath);
-                if (!success)
+                foreach (var name in transferData.NameCollection)
                 {
-                    return BadRequest($"Не удалось скопировать {(isDirectory ? "файл" : "директорию")} {sourcePath}");
+                    var sourcePath = Path.Combine(transferData.SourcePath, name);
+                    var isDirectory = PathTools.IsDirectory(sourcePath);
+                    if (isDirectory)
+                        PathTools.DeleteDirectory(sourcePath);
+                    else
+                        PathTools.DeleteFile(sourcePath);
                 }
-            }
 
-            return Ok();
+                return Ok();
+
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"Не удалось удалить:\n{ex.Message}");
+           }
         }
     }
 }

@@ -1,16 +1,32 @@
 <style>
-    * {
-        margin: 1px;
+    :root {
+        --font-color: aqua;
+        --back-color: darkblue;
+        --highlight-color: midnightblue;
+        --head-height: 30px;
+        --panel-head-height: 22px;
+        --panel-foot-height: 25px;
     }
+
+    body {
+        margin: 0px;
+        padding: 8px
+    }
+
+    header {
+        height: var(--head-height);
+    }
+
 
     select,
     button {
         cursor: pointer;
         background-color: darkgray;
+        margin: 2px;
     }
 
     body {
-        background-color: darkblue;
+        background-color: var(--back-color);
         font-family: monospace;
         color: white;
     }
@@ -19,10 +35,11 @@
         align-items: center;
         justify-content: left;
         display: flex;
+        height: var(--panel-head-height);
+        padding: 2px;
     }
 
     .folder-tools p {
-        margin: 0 0 0 5px;
         white-space: nowrap;
         overflow: auto;
         text-overflow: ellipsis;
@@ -30,25 +47,23 @@
 
     .table-container {
         overflow: auto;
-        height: calc(100vh - 120px);
-        border: 1px solid;
-        border-color: aqua;
+        /*так и не удалось разобраться, почему вычисления выдают верный результат, но появляется скроллбар, пришлось добавить магические 24px*/
+        height: calc(100vh - var(--head-height) - var(--panel-head-height) - var(--panel-foot-height) - 24px);
     }
 
     .content {
-        margin: 0px;
         border: 1px solid;
         border-radius: 1px;
         border-collapse: collapse;
-        color: aqua;
+        color: var(--font-color);
         width: 100%;
         overflow-x: hidden;
     }
 
     .content th {
-        background-color: darkblue;
+        background-color: var(--back-color);
         color: yellow;
-        border-color: aqua;
+        border-color: var(--font-color);
         position: sticky;
         top: 0;
     }
@@ -62,41 +77,50 @@
         border: 1px solid;
     }
 
+    td:nth-child(1) {
+        cursor: pointer;
+        width: auto;
+    }
     td:nth-child(2),
     td:nth-child(3) {
         text-align: right;
         width: 60px;
-        background: midnightblue;
+        background: var(--highlight-color);
     }
 
     .bottom-buttons {
         position: sticky;
         bottom: 0;
         border: 1px solid;
+        border-color: var(--font-color);
         width: 100%;
-    }
-
-    .fa {
-        margin-right: 2px;
+        height: var(--panel-foot-height)
     }
 
     .selected-row {
         color: darkgray;
     }
 
-    .file-managers-container {
+    .panels-container {
         display: flex;
     }
 
-    .file-manager {
+    .fa {
+        padding-right: 3px;
+    }
+
+    .panel {
         border: 1px solid;
+        border-color: var(--font-color);
         width: 50vw;
+        border-collapse: collapse;
     }
 
     tbody tr:hover {
-        background: midnightblue;
+        background: var(--highlight-color);
     }
 </style>
+
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css"
     crossorigin="anonymous" referrerpolicy="no-referrer" />
 
@@ -112,8 +136,8 @@
     <header>
         <h1>File Manager</h1>
     </header>
-    <div id="file-managers-container" class="file-managers-container">
-        <div class="file-manager">
+    <div id="panels-container" class="panels-container">
+        <div class="panel">
             <div class="folder-tools">
                 <select class="select-drive"></select>
                 <button onclick="onButtonUpLevelClick(this)"><i class="fa-solid fa-level-up"></i></button>
@@ -136,7 +160,8 @@
                 <div class="bottom-buttons">
                     <div>
                         <button onclick="transferElements(this, true)"><i class="fa-solid fa-copy"></i>Copy</button>
-                        <button onclick="transferElements(this, false)"><i class="fa-solid fa-level-down"></i>Move</button>
+                        <button onclick="transferElements(this, false)"><i
+                                class="fa-solid fa-level-down"></i>Move</button>
                         <button onclick="deleteElements(this)"><i class="fa-solid fa-scissors"></i>Delete</button>
                     </div>
                 </div>

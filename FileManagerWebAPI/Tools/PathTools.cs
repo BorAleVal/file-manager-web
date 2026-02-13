@@ -1,5 +1,6 @@
 ﻿using FileManagerWebAPI.DTO;
 using Microsoft.AspNetCore.Mvc;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 
@@ -15,25 +16,31 @@ namespace FileManagerWebAPI.Tools
         public static bool IsDirectory(string path) => File.GetAttributes(path).HasFlag(FileAttributes.Directory);
 
         /// <summary>
+        /// Запуск файла
+        /// </summary>
+        /// <param name="filePath"></param>
+        public static void RunFile(string filePath)
+        {
+            var peocess = new Process();
+            peocess.StartInfo = new ProcessStartInfo(filePath)
+            {
+                UseShellExecute = true
+            };
+            peocess.Start();
+        }
+
+        /// <summary>
         /// Копирование файла
         /// </summary>
         /// <param name="sourcePath">путь копируемого файла</param>
         /// <param name="destinationDirPath">путь получаемого файла</param>
         /// <returns></returns>
-        public static bool CopyFile(string sourcePath, string destinationDirPath)
+        public static void CopyFile(string sourcePath, string destinationDirPath)
         {
-            try
-            {
-                var fileName = Path.GetFileName(sourcePath);
-                var copiedFullFileName = GetCopiedNameRecursive(destinationDirPath, fileName);
+            var fileName = Path.GetFileName(sourcePath);
+            var copiedFullFileName = GetCopiedNameRecursive(destinationDirPath, fileName);
 
-                File.Copy(sourcePath, copiedFullFileName, false);
-                return true;
-            }
-            catch (Exception)
-            {
-                return false;
-            }
+            File.Copy(sourcePath, copiedFullFileName, false);
         }
 
         /// <summary>
@@ -42,17 +49,9 @@ namespace FileManagerWebAPI.Tools
         /// <param name="sourcePath">путь копируемой директории</param>
         /// <param name="destinationDirPath">путь получаемой директории</param>
         /// <returns></returns>
-        public static bool CopyDirectory(string sourcePath, string destinationDirPath)
+        public static void CopyDirectory(string sourcePath, string destinationDirPath)
         {
-            try
-            {
-                CopyDirectory(sourcePath, destinationDirPath, recursive: true);
-                return true;
-            }
-            catch (Exception)
-            {
-                return false; 
-            }
+            CopyDirectory(sourcePath, destinationDirPath, recursive: true);
         }
 
 
@@ -63,7 +62,7 @@ namespace FileManagerWebAPI.Tools
         /// <param name="destinationDirPath">путь получаемой директории</param>
         /// <param name="recursive">рекурсивно</param>
         /// <exception cref="DirectoryNotFoundException"></exception>
-        public static void CopyDirectory(string sourceDir, string destinationDir, bool recursive)
+        private static void CopyDirectory(string sourceDir, string destinationDir, bool recursive)
         {
             if (ContainsDirectory(destinationDir, sourceDir))
                 throw new DirectoryNotFoundException($"Невозможно скопировать папку саму в себя: {sourceDir}");
@@ -104,20 +103,12 @@ namespace FileManagerWebAPI.Tools
         /// <param name="sourcePath">путь копируемой директории</param>
         /// <param name="destinationDirPath">путь получаемой директории</param>
         /// <returns></returns>
-        public static bool MoveFile(string sourcePath, string destinationDirPath)
+        public static void MoveFile(string sourcePath, string destinationDirPath)
         {
-            try
-            {
-                var fileName = Path.GetFileName(sourcePath);
-                var copiedFullFileName = GetCopiedNameRecursive(destinationDirPath, fileName);
+            var fileName = Path.GetFileName(sourcePath);
+            var copiedFullFileName = GetCopiedNameRecursive(destinationDirPath, fileName);
 
-                File.Move(sourcePath, copiedFullFileName);
-                return true;
-            }
-            catch (Exception)
-            {
-                return false;
-            }
+            File.Move(sourcePath, copiedFullFileName);
         }
 
         /// <summary>
@@ -127,22 +118,14 @@ namespace FileManagerWebAPI.Tools
         /// <param name="destinationDirPath"></param>
         /// <returns></returns>
         /// <exception cref="DirectoryNotFoundException"></exception>
-        public static bool MoveDirectory(string sourceDir, string destinationDirPath)
+        public static void MoveDirectory(string sourceDir, string destinationDirPath)
         {
-            try
-            {
-                if (ContainsDirectory(destinationDirPath, sourceDir))
-                    throw new DirectoryNotFoundException($"Невозможно скопировать папку саму в себя: {sourceDir}");
+            if (ContainsDirectory(destinationDirPath, sourceDir))
+                throw new DirectoryNotFoundException($"Невозможно скопировать папку саму в себя: {sourceDir}");
 
-                var dirName = Path.GetFileName(sourceDir);
+            var dirName = Path.GetFileName(sourceDir);
 
-                Directory.Move(sourceDir, Path.Combine(destinationDirPath, dirName));
-                return true;
-            }
-            catch (Exception)
-            {
-                return false;
-            }
+            Directory.Move(sourceDir, Path.Combine(destinationDirPath, dirName));
         }
 
         /// <summary>
@@ -156,8 +139,9 @@ namespace FileManagerWebAPI.Tools
             var dir = new DirectoryInfo(path);
             while (dir != null)
             {
-                if (dir.Name.Equals(containerDir, StringComparison.CurrentCultureIgnoreCase))
+                if (dir.FullName.Equals(containerDir, StringComparison.CurrentCultureIgnoreCase))
                     return true;
+
                 dir = dir.Parent;
             }
             return false;
@@ -170,15 +154,8 @@ namespace FileManagerWebAPI.Tools
         /// <returns></returns>
         public static bool DeleteFile(string path)
         {
-            try
-            {
-                new FileInfo(path).Delete();
-                return true;
-            }
-            catch (Exception)
-            {
-                return false;
-            }
+            new FileInfo(path).Delete();
+            return true;
         }
 
         /// <summary>
@@ -188,16 +165,8 @@ namespace FileManagerWebAPI.Tools
         /// <returns></returns>
         public static bool DeleteDirectory(string path)
         {
-            try
-            {
-                new DirectoryInfo(path).Delete();
-                return true;
-            }
-            catch (Exception)
-            {
-                return false;
-            }
-
+            new DirectoryInfo(path).Delete(true);
+            return true;
         }
 
         /// <summary>

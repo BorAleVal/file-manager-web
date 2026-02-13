@@ -15,6 +15,7 @@ namespace FileManagerWebAPI.Tools
 
         public FileSize(long size)
         {
+            //todo: понять, что выводить если размер меньше 0 (а это возможно)
             value = size;
             double calcSize = size;
             int i = 0;
