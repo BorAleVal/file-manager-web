@@ -47,7 +47,7 @@ namespace FileManagerWebAPI.Controllers
 
             var ownerPath = Path.GetDirectoryName(path);
 
-            if (ownerPath == null)
+            if (string.IsNullOrWhiteSpace(ownerPath))
                 return BadRequest("директория не существует");
 
             return Ok(ownerPath);
